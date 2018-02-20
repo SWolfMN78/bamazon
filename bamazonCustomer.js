@@ -1,6 +1,7 @@
 //requre mysql to make use of it for the application.
 var request = require("request");
 var mySQL = require("mysql");
+var inquirer = require("inquirer");
 require("dotenv").config();
 
 //stashing the connection informatin in variables for easy & fast adjustment later.
@@ -24,7 +25,7 @@ connection.connect(function(error) {
     if (error) throw error;
 
     console.log("connected as ID " + connection.threadId);
-    afterConnection();
+    initialConnection();
 });
 
 /* Running this application will first display all of the items available for sale. Include the ids, names, and prices of products for sale.
@@ -33,10 +34,13 @@ The app should then prompt users with two messages.
 The first should ask them the ID of the product they would like to buy.
 The second message should ask how many units of the product they would like to buy. */
 
-function afterConnection() {
+function initialConnection() {
     connection.query("SELECT * FROM products", function(error, result) {
         if (error) throw error;
 
-        console.log("first record: ", result[0].product_name);
+        for (var i = 0; i < result.length; i++) {
+            console.log(result[i].item_id + " | " + result[i].product_name +
+                " | $" + result[i].price);
+        }
     });
 }
