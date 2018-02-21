@@ -28,11 +28,11 @@ connection.connect(function(error) {
     initialConnection();
 });
 
-/* Running this application will first display all of the items available for sale. Include the ids, names, and prices of products for sale.
-The app should then prompt users with two messages.
-
-The first should ask them the ID of the product they would like to buy.
-The second message should ask how many units of the product they would like to buy. */
+/*Running this application will first display all of the items available for
+    sale. Include the ids, names, and prices of products for sale.
+    * The app should then prompt users with two messages.
+    * The first should ask them the ID of the product they would like to buy.
+    * The second message should ask how many units of the product they would like to buy. */
 
 function initialConnection() {
     connection.query("SELECT * FROM products", function(error, result) {
@@ -43,4 +43,24 @@ function initialConnection() {
                 " | $" + result[i].price);
         }
     });
+
+    //prompt the user - Which ID they wish to buy
+    inquirer
+        .prompt({
+            name: "item",
+            type: "input",
+            message: "Please enter the id # of the item you would like to purchase.",
+            choices: ["id"],
+        })
+        .then(function(answer) {
+            isNumValue(value);
+        })
+};
+
+//control/validation functions
+function isNumValue(value) {
+    if (isNan(value) === false) {
+        return true;
+    }
+    return false;
 }
