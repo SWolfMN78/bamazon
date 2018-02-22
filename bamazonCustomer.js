@@ -23,12 +23,13 @@ var connection = mySQL.createConnection({
 //throw an error if the DBA doesn't exist.
 connection.connect(function(error) {
     if (error) throw error;
-    console.log("connected as ID " + connection.threadId);
+    // console.log("connected as ID " + connection.threadId);
     initialConnection();
 });
 
 //display the list from the DBA for the user
 function initialConnection() {
+    console.log("\n ~_~ WELCOME to Bamazon! ~_~ \n");
     connection.query("SELECT * FROM products", function(error, result) {
         if (error) throw error;
 
@@ -36,8 +37,8 @@ function initialConnection() {
             console.log(result[i].item_id + " | " + result[i].product_name +
                 " | $" + result[i].price);
         }
+        console.log("\n");
         openingQuestions();
-        // connection.end();
     });
 };
 
@@ -45,6 +46,7 @@ function openingQuestions() {
     //prompt the user - Which ID they wish to buy from the list displayed
     inquirer
         .prompt([{
+                //ask the user which of the items they would like to purchase.
                 name: "item_id",
                 type: "input",
                 message: "Please enter the id # of the item you would like to purchase.",
@@ -58,7 +60,7 @@ function openingQuestions() {
             {
                 name: "itemCount",
                 type: "input",
-                message: "How many of this item would you like to purchase?",
+                message: "\nHow many of this item would you like to purchase?",
                 validate: function(value) { return isNumValue(value); }
             }
         ])
@@ -67,19 +69,6 @@ function openingQuestions() {
             isIDValid(answer);
         })
 }
-
-/* Once the customer has placed the order, your application should check if
-    your store has enough of the product to meet the customer's request.
-
-    If not, the app should log a phrase like Insufficient quantity!, and then 
-    prevent the order from going through.
-
-    However, if your store does have enough of the product, you should fulfill 
-    the customer's order.
-
-    This means updating the SQL database to reflect the remaining quantity.
-    Once the update goes through, show the customer the total cost of their 
-    purchase. */
 
 //control/validation functions
 function isNumValue(value) {
@@ -95,32 +84,61 @@ function isIDValid(answer) {
     connection.query(
         "SELECT COUNT(*) cnt FROM bamazondb.products WHERE Item_id = " + answer.item_id,
         function(error, result) {
-            if (error) throw error;
-            console.log("I found " + result[0].cnt);
+            if (error) throw error; //if the item is not good throw an error
+            //display how many matches they found that match the ID selected
+            console.log("\nWe found " + result[0].cnt + " item(s) with that matching ID.\n");
             if (result[0].cnt === 0) {
                 console.log("that ID does not exist, please try again");
-                openingQuestions();
+                openingQuestions(); //restart questions once verified to be a bad ID.
                 return;
             }
             isItemsInStock(answer);
-        }
-    )
+        });
 }
 
 function isItemsInStock(answer) {
-    //check to see if the item is in stock
-
-    connection.query(
-        "SELECT stock_quantity FROM bamazondb.products where item_id = " + answer.item_id,
+    //check to see if the item is in stock.
+    var sql = "SELECT ?? FROM ?? WHERE ?? = ?";
+    var inserts = ["stock_quantity", "products", "item_id", answer.item_id];
+    sql = mySQL.format(sql, inserts);
+    connection.query(sql,
+        // "SELECT stock_quantity FROM bamazondb.products where item_id = " + answer.item_id,
         function(error, result) {
+            console.log(answer.product_name);
             if (error) throw error;
-            if (answer.itemCount <= result.stock_quantity) {
-                purchaseProduct(answer);
-            } else {
-                console.log("Sorry, we don't have enough of that product, please try again")
-                openingQuestions();
-            }
 
-        }
-    )
+            //code breaks here - start here and adjust.
+
+            if (answers.itemCount <= result[0].stock_quantity) { //if the items is in stock start a purchase check
+                // purchaseProduct(answer);
+                console.log("\nWe have that item in stock!");
+            } else {
+                console.log("Sorry, we don't have enough of that product, please try again");
+                console.log("we only have " + result.stock_quantity + " of that item.");
+                // openingQuestions(answer);
+                connection.end();
+            }
+        });
 }
+
+// function purchaseProduct(answer) {
+//     var adjstdQuantity = answer.stock_quantity - answer.itemCount
+//     console.log(adjstdQuantity);
+// connection.query(
+//         //UPDATE products SET stock_quantity = stock_quantity - 72 WHERE " + answer.item_id,
+//         "UPDATE products SET ? WHERE ?", [{
+//                 stock_quantity: answer.itemCount
+//             },
+//             {
+//                 id: chosenItem.id
+//             }
+//         ],
+//     )
+//get the cost of the item that the user wants to buy by multiplying the amount they want by the price per item.
+
+//confirm if they wish to proceed - if yes then..
+
+//take the information submitted and reduce the number of the stock by 1 & update the dba
+
+//update the user that the item has been purchased and will be sent.  Ask if they want to make another purchase.
+// }
