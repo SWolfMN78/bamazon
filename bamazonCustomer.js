@@ -49,7 +49,7 @@ function openingQuestions() {
                 //ask the user which of the items they would like to purchase.
                 name: "item_id",
                 type: "input",
-                message: "Please enter the id # of the item you would like to purchase.",
+                message: "\nPlease enter the id # of the item you would like to purchase.",
                 choices: ["id"],
                 //validate the ID entered is a valid choice.
                 validate: function(value) {
@@ -81,19 +81,20 @@ function isNumValue(value) {
 
 function isIDValid(answer) {
     //check to see if the id entered is one on the list.
-    connection.query(
-        "SELECT COUNT(*) cnt FROM bamazondb.products WHERE Item_id = " + answer.item_id,
-        function(error, result) {
-            if (error) throw error; //if the item is not good throw an error
-            //display how many matches they found that match the ID selected
-            console.log("\nWe found " + result[0].cnt + " item(s) with that matching ID.\n");
-            if (result[0].cnt === 0) {
-                console.log("that ID does not exist, please try again");
-                openingQuestions(); //restart questions once verified to be a bad ID.
-                return;
-            }
-            isItemsInStock(answer);
-        });
+    var sql = "SELECT COUNT(*) ?? FROM ?? WHERE ?? = ?";
+    var inserts = ["cnt", "bamazondb.products", "item_id", answer.item_id];
+    sql = mySQL.format(sql, inserts);
+    connection.query(sql, function(error, result) {
+        if (error) throw error; //if the item is not good throw an error
+        //display how many matches they found that match the ID selected
+        console.log("\nWe found " + result[0].cnt + " item(s) with that matching ID.\n");
+        if (result[0].cnt === 0) {
+            console.log("that ID does not exist, please try again");
+            openingQuestions(); //restart questions once verified to be a bad ID.
+            return;
+        }
+        isItemsInStock(answer);
+    });
 }
 
 function isItemsInStock(answer) {
@@ -101,44 +102,76 @@ function isItemsInStock(answer) {
     var sql = "SELECT ?? FROM ?? WHERE ?? = ?";
     var inserts = ["stock_quantity", "products", "item_id", answer.item_id];
     sql = mySQL.format(sql, inserts);
-    connection.query(sql,
-        // "SELECT stock_quantity FROM bamazondb.products where item_id = " + answer.item_id,
-        function(error, result) {
-            console.log(answer.product_name);
-            if (error) throw error;
+    connection.query(sql, function(error, result) {
+        if (error) throw error;
+        if (answer.itemCount <= result[0].stock_quantity) { //if the items is in stock start a purchase check
 
-            //code breaks here - start here and adjust.
+            console.log("You entered " + answer.itemCount);
+            console.log("We have  " + result[0].stock_quantity + " of that item");
 
-            if (answers.itemCount <= result[0].stock_quantity) { //if the items is in stock start a purchase check
-                // purchaseProduct(answer);
-                console.log("\nWe have that item in stock!");
-            } else {
-                console.log("Sorry, we don't have enough of that product, please try again");
-                console.log("we only have " + result.stock_quantity + " of that item.");
-                // openingQuestions(answer);
-                connection.end();
-            }
-        });
+            console.log("\nWe have that item in stock!");
+            console.log("The item has been pulled from the shelves...and we are packaging it now.\n");
+            var usersSelection = result[0].stock_quantity - answer.itemCount; //press the equation to be worked into a variable for ease of use.
+            var query = connection.query(
+                "UPDATE products SET ? WHERE ?", [{
+                        stock_quantity: usersSelection
+                    },
+                    {
+                        item_id: result[0].item_id
+                    }
+                ],
+                function(error, result) {
+
+                    console.log("product updated! " + usersSelection + " left.");
+
+                    checkAdditonalOrders();
+                }
+            );
+        } else {
+            console.log("Sorry, we don't have enough of that product, please try again");
+            openingQuestions(answer);
+        }
+    });
+}
+
+function checkAdditonalOrders() {
+    inquirer.prompt([{
+        type: "confirm",
+        name: "aroundAgain",
+        message: "Would you like to place another order?",
+        default: true
+    }]).then(function(answers) {
+        if (answers.aroundAgain) {
+            initialConnection();
+        } else {
+            console.log("\nThank you for shopping\n");
+            console.log("\n ~_~ WELCOME to Bamazon! ~_~ \n");
+            connection.end();
+        }
+    });
 }
 
 // function purchaseProduct(answer) {
-//     var adjstdQuantity = answer.stock_quantity - answer.itemCount
-//     console.log(adjstdQuantity);
-// connection.query(
-//         //UPDATE products SET stock_quantity = stock_quantity - 72 WHERE " + answer.item_id,
-//         "UPDATE products SET ? WHERE ?", [{
-//                 stock_quantity: answer.itemCount
-//             },
-//             {
-//                 id: chosenItem.id
-//             }
-//         ],
-//     )
-//get the cost of the item that the user wants to buy by multiplying the amount they want by the price per item.
+//     //update the database then read the information back out to the user.
+//     //UPDATE products SET stock_quantity = stock_quantity - 72 WHERE item_id = 7;
+//     var sql = "UPDATE ?? SET ??  WHERE ?? = ?";
+//     var inserts = ["products", "stock_quantity", "item_id", answer.item_id];
+//     sql = mySQL.format(sql, inserts);
+//     connection.query(
+//             //UPDATE products SET stock_quantity = stock_quantity - 72 WHERE " + answer.item_id,
+//             "UPDATE products SET ? WHERE ?", [{
+//                     stock_quantity: answer.itemCount
+//                 },
+//                 {
+//                     id: chosenItem.id
+//                 }
+//             ],
+//         )
+//         // get the cost of the item that the user wants to buy by multiplying the amount they want by the price per item.
 
-//confirm if they wish to proceed - if yes then..
+//     // confirm if they wish to proceed - if yes then..
 
-//take the information submitted and reduce the number of the stock by 1 & update the dba
+//     // take the information submitted and reduce the number of the stock by 1 & update the dba
 
-//update the user that the item has been purchased and will be sent.  Ask if they want to make another purchase.
+//     // update the user that the item has been purchased and will be sent.  Ask if they want to make another purchase.
 // }
