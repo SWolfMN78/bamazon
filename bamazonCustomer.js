@@ -111,16 +111,18 @@ function isItemsInStock(answer) {
 
             console.log("\nWe have that item in stock!");
             console.log("The item has been pulled from the shelves...and we are packaging it now.\n");
+
             var usersSelection = result[0].stock_quantity - answer.itemCount; //press the equation to be worked into a variable for ease of use.
             var query = connection.query(
                 "UPDATE products SET ? WHERE ?", [{
                         stock_quantity: usersSelection
                     },
                     {
-                        item_id: result[0].item_id
+                        item_id: answer.item_id
                     }
                 ],
                 function(error, result) {
+                    if (error) throw error;
 
                     console.log("product updated! " + usersSelection + " left.");
 
